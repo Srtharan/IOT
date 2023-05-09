@@ -1,0 +1,224 @@
+#define BLYNK_TEMPLATE_ID "blynk template id"
+
+#define BLYNK_TEMPLATE_NAME "Template Name "
+
+#define BLYNK_AUTH_TOKEN "auth token" 
+
+#include "DHT.h"
+
+#include <stdlib.h>
+
+#include <ESP8266WiFi.h>
+
+#include <BlynkSimpleEsp8266.h>
+
+#include <WiFiClientSecure.h>
+
+#include <UniversalTelegramBot.h>
+
+ 
+
+char auth[] = "auth token";
+
+const char*BOT_TOKEN="auth token" ;
+
+const int CHAT_ID = botid;
+
+ 
+
+const char* ssid ="WiFi ssid";  
+
+const char* password = "wifi password";  
+
+ 
+
+const int flame = D0; 
+
+const int buzz = D1;
+
+WiFiClientSecure client;  //define wifi client as client
+
+UniversalTelegramBot bot(BOT_TOKEN, client);
+
+ 
+
+//SimpleTimer timer;
+
+#define DHTpin 2 // D4 on the nodemcu ESP8266
+
+int mq135 = A0; // smoke sensor is connected with the analog pin A0 
+
+int data = 0; 
+
+DHT dht(2,DHT11); 
+
+void setup(){
+
+  Serial.begin(9600);
+
+    pinMode(flame,INPUT);
+
+ 
+
+  Serial.begin(9600);         
+
+  Serial.println("");
+
+  Serial.print("Connecting To: ");
+
+  Serial.println(ssid);
+
+  WiFi.begin(ssid, password);
+
+  
+
+  while (WiFi.status() != WL_CONNECTED)
+
+  {
+
+    delay(3000);
+
+    Serial.print(".");
+
+  }
+
+   client.setInsecure();  
+
+String path = "/bot" + String(BOT_TOKEN) + "/getUpdates";
+
+if (client.connect("api.telegram.org", 443)) {
+
+ 
+
+ 
+
+  String response = "";
+
+  while (client.available()) {
+
+    char c = client.read();
+
+    response += c;
+
+  }
+
+  Serial.println(response);
+
+}
+
+  Serial.println("");
+
+  Serial.println("WiFi Connected...");
+
+  Serial.print("IP address: ");
+
+  Serial.println(WiFi.localIP());
+
+  bot.sendMessage("", "WiFi connected");
+
+ 
+
+    Blynk.begin(auth, ssid, password);
+
+    pinMode(D0, OUTPUT); 
+
+  delay(3000);
+
+}
+
+void loop(){
+
+  getSendData();
+
+   int t = digitalRead(flame);
+
+  Serial.println(t);
+
+   if (t==0) {   
+   Serial.println("No Flame detected");
+
+    Serial.println("");
+
+    Blynk.virtualWrite(V9, "No Fire");
+
+    
+
+  }
+
+  else{
+
+    bot.sendMessage("botid", "Fire Detected!!!!");
+
+    Serial.println("");
+
+    Serial.print("Flame detected");
+
+    Blynk.virtualWrite(V9, "Fire Detected");
+
+  
+
+  }
+
+ 
+
+  Blynk.run();
+
+}
+
+void getSendData()
+
+{
+
+ 
+
+ delay(3000);
+
+  float humidity = dht.readHumidity();
+
+  float temperature = dht.readTemperature();
+
+  Serial.println("Humidity:");
+
+  Serial.print(humidity);Serial.println("");
+
+  Serial.println("Temperature is:");
+
+  Serial.print(temperature);Serial.println("");
+
+Blynk.virtualWrite(V3, humidity);
+
+Blynk.virtualWrite(V4, temperature);
+
+Serial.println("");
+
+  
+
+data = analogRead(mq135); 
+
+  Blynk.virtualWrite(V2, data); //virtual pin V2
+
+Serial.print(data); Serial.println("");
+
+  if (data > 400 )
+
+  {
+
+    bot.sendMessage("botid", "Smoke Detected!!!!");
+
+    Blynk.virtualWrite(V5,"Smoke Detected!!!");
+
+     
+
+  }
+
+  else{
+
+    bot.sendMessage("botid", "No Smoke Detected");
+
+    Serial.print("No smoke...");
+
+    Blynk.virtualWrite(V5,"No Smoke...");
+
+  }
+
+}
